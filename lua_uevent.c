@@ -516,7 +516,7 @@ void uevent_cleanup()
 	// TODO:
 }
 
-int luaopen_uevent(lua_State *L) {
+int luaopen_luevent(lua_State *L) {
 	atexit(uevent_cleanup);
 
 	int ret = lua_uevent_new(L);

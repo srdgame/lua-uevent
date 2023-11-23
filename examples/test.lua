@@ -1,4 +1,4 @@
-local uevent = require 'uevent'
+local uevent = require 'luevent'
 
 local conn = uevent.new(function(msg)
 	if string.lower(string.sub(msg, 1, 7)) == 'libudev' then

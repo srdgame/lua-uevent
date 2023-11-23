@@ -1,4 +1,4 @@
-package = "uevent"
+package = "luevent"
 version = "dev-1"
 
 source = {
@@ -23,7 +23,7 @@ build = {
   modules = {
     uevent = {
       sources = {"lua_uevent.c"},
-      libraries = {"uevent"},
+      libraries = {"luevent"},
     }
   }
 }
