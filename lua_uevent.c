@@ -24,10 +24,12 @@
 #define UEVENT_HANDLE "UEVENT_HANDLE_KEY"
 #define UEVENT_MSG_LEN 8192
 
+/*
 static void ERROR_ABORT(int x, const char* s) {
 	fprintf(stderr, "%d : %s\n", x, s);
 	exit(-1);
 }
+*/
 
 typedef struct {
 	lua_State* state;
@@ -178,13 +180,12 @@ static int uevent_gc(lua_State *L)
 
 		pthread_mutex_lock(&conn->lock);
 
-		data_list_node_t* node = conn->data_head;
-		while (node) {
+		while (conn->data_head) {
+			data_list_node_t* node = conn->data_head;
+			conn->data_head = node->next;
 			free(node->data.data);
 			free(node);
-			node = node->next;
 		}
-		conn->data_head = NULL;
 		conn->data_tail = NULL;
 
 		pthread_mutex_unlock(&conn->lock);
@@ -206,18 +207,6 @@ static int uevent_close (lua_State *L) {
 		return 1;
 	}
 	uevent_gc(L);
-	lua_pushboolean (L, 1);
-	return 1;
-}
-
-static int uevent_check_handle(lua_State *L) {
-	uevent_conn_t* conn = get_connection(L);
-
-	if (conn->sock > 0 ) {
-		char err_msg[100];
-		sprintf(err_msg, "socket [%d]", conn->sock);
-		return uevent_failmsg(L, "UEVENT handle failure: ", err_msg);
-	}
 	lua_pushboolean (L, 1);
 	return 1;
 }
@@ -263,16 +252,28 @@ static int uevent_run(lua_State *L)
 		// printf("%s: process data list\n", __func__);
 		while (node) {
 			process_data(&node->data);
+			conn->data_head = node->next;
 			free(node->data.data);
 			free(node);
-			node = node->next;
+			node = conn->data_head;
 		}
-		conn->data_head = NULL;
-		conn->data_tail = NULL;
+		conn->data_tail = conn->data_head;
 	}
 
 	if (pthread_mutex_unlock(&conn->lock) != 0) {
 		return uevent_failmsg(L, "UEVENT mutex_unlock error", strerror(errno));
+	}
+	lua_pushboolean (L, 1);
+	return 1;
+}
+
+static int uevent_check_connection(lua_State *L) {
+	uevent_conn_t* conn = get_connection(L);
+
+	if (conn->sock > 0 ) {
+		char err_msg[100];
+		sprintf(err_msg, "socket [%d]", conn->sock);
+		return uevent_failmsg(L, "UEVENT handle failure: ", err_msg);
 	}
 	lua_pushboolean (L, 1);
 	return 1;
@@ -292,6 +293,7 @@ static int uevent_tostring (lua_State *L) {
 static const struct luaL_Reg api_funcs[] = {
 	{ "__gc", uevent_gc },
 	{ "close", uevent_close },
+	{ "check_connection", uevent_check_connection },
 	{ "run", uevent_run },
 	{ NULL, NULL},
 };
@@ -373,7 +375,9 @@ static void* connection_proc(void* arg)
 
 		push_conn_data(conn, msg, len);
 	}
+	conn->sock = -1;
     // printf("%s: exit\n", __func__);
+	return NULL;
 }
 
 static int create_netlink(lua_State *L, uevent_conn_t* conn, unsigned int groups)
