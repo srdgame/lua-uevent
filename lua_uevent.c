@@ -225,13 +225,13 @@ static int uevent_check_handle(lua_State *L) {
 static void process_data(uevent_data_t* data)
 {
 	if (!data->conn || data->conn->closed) {
-		printf("%s: conn nil or closed\n", __func__);
+		// printf("%s: conn nil or closed\n", __func__);
 		return;
 	}
 
 	lua_State* L = data->conn->callback->state;
 	if (!L) {
-		printf("%s: luaState nil\n", __func__);
+		// printf("%s: luaState nil\n", __func__);
 		return;
 	}
 
@@ -260,7 +260,7 @@ static int uevent_run(lua_State *L)
 
 	data_list_node_t* node = conn->data_head;
 	if (node != NULL) {
-		printf("%s: process data list\n", __func__);
+		// printf("%s: process data list\n", __func__);
 		while (node) {
 			process_data(&node->data);
 			free(node->data.data);
@@ -311,7 +311,7 @@ static void push_conn_data(uevent_conn_t* conn, char* buf, int len)
 	node->next = NULL;
 
 	if (pthread_mutex_lock(&conn->lock) != 0) {
-		printf("%s: mutex_lock error\n", __func__);
+		// printf("%s: mutex_lock error\n", __func__);
 		free(msg);
 		return;
 	}
@@ -326,10 +326,10 @@ static void push_conn_data(uevent_conn_t* conn, char* buf, int len)
 	}
 
 	if (pthread_mutex_unlock(&conn->lock) != 0) {
-		printf("%s: mutex_unlock error\n", __func__);
+		// printf("%s: mutex_unlock error\n", __func__);
 		return;
 	}
-	printf("%s: push conn data\n", __func__);
+	// printf("%s: push conn data\n", __func__);
 }
 
 static void* connection_proc(void* arg)
@@ -351,29 +351,29 @@ static void* connection_proc(void* arg)
     hdr.msg_iov = &iov;
     hdr.msg_iovlen = 1;
 
-    printf("%s: device_fd = %d\n", __func__, device_fd);
+    // printf("%s: device_fd = %d\n", __func__, device_fd);
 
     while (1) {
         len = recvmsg(device_fd, &hdr, 0);
-		printf("%s: device_fd = %d recevied msg %ld\n", __func__, device_fd, len);
+		// printf("%s: device_fd = %d recevied msg %ld\n", __func__, device_fd, len);
 
         if (len <= 0) {
             break;
         }
 
         if (hdr.msg_flags & MSG_TRUNC) {
-			printf("%s: skip truncated message %d\n", __func__, len);
+			// printf("%s: skip truncated message %d\n", __func__, len);
             continue;
         }
 
         if (sa.nl_groups == 0x0 || (sa.nl_groups == 0x1 && sa.nl_pid)) {
-			printf("%s: skip group message %d\n", __func__, sa.nl_groups, sa.nl_pid);
+			// printf("%s: skip group message %d\n", __func__, sa.nl_groups, sa.nl_pid);
             continue;
         }
 
 		push_conn_data(conn, msg, len);
 	}
-    printf("%s: exit\n", __func__);
+    // printf("%s: exit\n", __func__);
 }
 
 static int create_netlink(lua_State *L, uevent_conn_t* conn, unsigned int groups)
@@ -438,7 +438,7 @@ static int env_connect_new(lua_State *L)
 	cb->callback = LUA_NOREF;
 
 	groups = luaL_optnumber(L, 2, 0xffffffff);
-	printf("[UEVENT] Groups: %02x\n", groups);
+	// printf("[UEVENT] Groups: %02x\n", groups);
 
 	uevent_check_callback(L, cb, 1);
 
