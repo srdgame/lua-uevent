@@ -174,6 +174,7 @@ static int uevent_gc(lua_State *L)
 		conn->env = LUA_NOREF;
 
 		if (conn->sock >= 0) {
+			shutdown(conn->sock, SHUT_RDWR); // Try to shutdown socket to wakup recvmsg
 			close(conn->sock);
 			conn->sock = -1;
 		}
@@ -194,8 +195,8 @@ static int uevent_gc(lua_State *L)
 			luaL_unref (L, LUA_REGISTRYINDEX, conn->callback->callback);
 			conn->callback = NULL;
 		}
-		pthread_join(conn->thread, NULL);
-		pthread_mutex_destroy(&conn->lock);
+		// Do not wait the thread to be quited. as we meet block issue here in skynet
+		// pthread_join(conn->thread, NULL);
 	}
 	return 0;
 }
@@ -376,6 +377,7 @@ static void* connection_proc(void* arg)
 		push_conn_data(conn, msg, len);
 	}
 	conn->sock = -1;
+	pthread_mutex_destroy(&conn->lock);
     // printf("%s: exit\n", __func__);
 	return NULL;
 }
