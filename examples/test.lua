@@ -1,6 +1,6 @@
 local uevent = require 'luevent'
 
-local conn = uevent.new(function(msg)
+local conn = assert(uevent.new(function(msg)
 	if string.lower(string.sub(msg, 1, 7)) == 'libudev' then
 		-- Skip libudev message
 		return
@@ -21,7 +21,7 @@ local conn = uevent.new(function(msg)
 			print(key, val)
 		end
 	end
-end)
+end))
 
 while true do
 	local r, err = conn:run()
