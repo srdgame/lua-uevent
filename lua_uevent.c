@@ -458,8 +458,9 @@ static int create_netlink(lua_State *L, uevent_conn_t* conn, unsigned int groups
 
 	ret = setsockopt(sockfd, SOL_SOCKET, SO_RCVBUFFORCE, &sz, sizeof(sz));
 	if (ret < 0) {
-		close(sockfd);
-		return uevent_failmsg(L, "setsockopt error ", strerror(errno));
+		// Do not close socket as it is not crititical
+		// close(sockfd);
+		// return uevent_failmsg(L, "setsockopt error ", strerror(errno));
 	}
 
 	ret = bind(sockfd, (struct sockaddr *) &addr, sizeof(addr));
