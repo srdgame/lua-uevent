@@ -337,6 +337,7 @@ static void* connection_proc(void* arg)
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
 				continue;
 			}
+			// fprintf(stderr, "socket error: %d\n", errno);
             break;
         }
 
@@ -351,6 +352,7 @@ static void* connection_proc(void* arg)
 		push_conn_data(conn, msg, len);
 	}
 
+	// fprintf(stderr, "closing connection... closing:%d conn->sock:%d\n", conn->closing, conn->sock);
 	// Socket closed or connection is closing.
 	destroy_connection(conn);
 
@@ -403,15 +405,13 @@ static int create_netlink(lua_State *L, uevent_conn_t* conn, unsigned int groups
 		return uevent_failmsg(L, "create lock failed ", strerror(errno));
 	}
 
+	conn->sock = sockfd;
+
 	if (pthread_create(&conn->thread, NULL, connection_proc, conn) != 0) {
 		pthread_mutex_destroy(&conn->lock);
 		close(sockfd);
 		return uevent_failmsg(L, "create thread failed ", strerror(errno));
 	}
-
-	// Assign socket only after all initializations succeed
-	// This prevents GC from accessing uninitialized resources
-	conn->sock = sockfd;
 
 	return 1;
 }
